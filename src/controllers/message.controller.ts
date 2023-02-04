@@ -6,15 +6,16 @@ import {
 } from "../services/data.service";
 import { SendMessageOptions } from "chatgpt";
 import DataModel from "../models/data.model";
-import { Message } from "whatsapp-web.js";
+import {Client, Message, MessageMedia} from "whatsapp-web.js";
 import { personalMessageHandler } from "src/services/message.service";
 import Logger from "../utils/logger.util";
 import { getPrefix } from "../utils/prefix.util";
 import Prefix from "../models/prefix.model";
 import {getAuthorId, getAuthorName, getSenderId, isGroupChat} from "../utils/message.util"
 import {NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
+import {craiyon} from "../configs/cClient.config";
 
-export const handler = async (message: Message, p: any) => {
+export const handler = async (client: Client, message: Message, p: any) => {
   try {
     const start = Date.now();
 
@@ -25,6 +26,15 @@ export const handler = async (message: Message, p: any) => {
     const prompt = prefix.message;
 
     if (!prefix.isPrefix) return;
+
+    if(prefix.isImg) {
+      const result = await craiyon.generate({
+        prompt: prompt,
+      });
+      const media = await new MessageMedia("image/jpg", result.asBase64())
+      await client.sendMessage(getSenderId(message), media);
+      return;
+    }
 
     if(isGroupChat(message)){
       // @ts-ignore
