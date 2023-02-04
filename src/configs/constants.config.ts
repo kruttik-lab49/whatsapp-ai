@@ -1,4 +1,4 @@
-export const APP_NAME = "Zappy BOT";
+export const APP_NAME = "Socrates";
 export const prefixes = [
   "Zappy",
   "ZappyBot",
@@ -24,6 +24,8 @@ export const prefixes = [
   "Zappy?",
   "ZAPPY?",
   "zappy!",
+  "Socrates",
+  "socrates"
 ];
 
 export const removablePrefixes = [
@@ -42,4 +44,9 @@ export const removablePrefixes = [
   "Zappy?",
   "ZAPPY?",
   "zappy!",
+  "Socrates",
+  "socrates"
 ];
+
+export const RESET_REPLY="Ok. I forgot everything you said. Let's start again."
+export const NOTHING_TO_RESET_REPLY="I dont think we have talked. Let's talk."
