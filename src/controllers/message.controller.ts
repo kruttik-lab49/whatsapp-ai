@@ -27,15 +27,6 @@ export const handler = async (client: Client, message: Message, p: any) => {
 
     if (!prefix.isPrefix) return;
 
-    if(prefix.isImg) {
-      const result = await craiyon.generate({
-        prompt: prompt,
-      });
-      const media = await new MessageMedia("image/jpg", result.asBase64())
-      await client.sendMessage(getSenderId(message), media);
-      return;
-    }
-
     if(isGroupChat(message)){
       // @ts-ignore
       Logger.info(`Received prompt from Group Chat ${getSenderId(message)} author ${getAuthorId(message)}(${getAuthorName(message)}): ${prompt}`);
@@ -43,6 +34,16 @@ export const handler = async (client: Client, message: Message, p: any) => {
       Logger.info(`Received prompt from Private Chat ${getSenderId(message)}: ${prompt}`);
     }
 
+    if(prefix.isImg) {
+      Logger.info("Generating images.")
+      const result = await craiyon.generate({
+        prompt: prompt,
+      });
+
+      const media = await new MessageMedia("image/jpg", result.images[0].asBase64())
+      await client.sendMessage(getSenderId(message), media);
+      return;
+    }
 
     // Check if the message is a personal message or not and handles it
     const isHandled = await personalMessageHandler(message, prompt);
