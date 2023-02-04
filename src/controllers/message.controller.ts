@@ -36,12 +36,12 @@ export const handler = async (client: Client, message: Message, p: any) => {
 
     if(prefix.isImg) {
       Logger.info("Generating images.")
+      await message.reply("Patience is a virtue. It may take upto 30 seconds...");
       const result = await craiyon.generate({
         prompt: prompt,
       });
-
       const media = await new MessageMedia("image/jpg", result.images[0].asBase64())
-      await client.sendMessage(getSenderId(message), media);
+      await message.reply(media);
       return;
     }
 
