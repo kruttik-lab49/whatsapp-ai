@@ -6,15 +6,16 @@ import {
 } from "../services/data.service";
 import { SendMessageOptions } from "chatgpt";
 import DataModel from "../models/data.model";
-import { Message } from "whatsapp-web.js";
+import {Client, Message, MessageMedia} from "whatsapp-web.js";
 import { personalMessageHandler } from "src/services/message.service";
 import Logger from "../utils/logger.util";
 import { getPrefix } from "../utils/prefix.util";
 import Prefix from "../models/prefix.model";
 import {getAuthorId, getAuthorName, getSenderId, isGroupChat} from "../utils/message.util"
 import {NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
+import {craiyon} from "../configs/cClient.config";
 
-export const handler = async (message: Message, p: any) => {
+export const handler = async (client: Client, message: Message, p: any) => {
   try {
     const start = Date.now();
 
@@ -33,6 +34,16 @@ export const handler = async (message: Message, p: any) => {
       Logger.info(`Received prompt from Private Chat ${getSenderId(message)}: ${prompt}`);
     }
 
+    if(prefix.isImg) {
+      Logger.info("Generating images.")
+      await message.reply("Patience is a virtue. It may take upto 30 seconds...");
+      const result = await craiyon.generate({
+        prompt: prompt,
+      });
+      const media = await new MessageMedia("image/jpg", result.images[0].asBase64())
+      await message.reply(media);
+      return;
+    }
 
     // Check if the message is a personal message or not and handles it
     const isHandled = await personalMessageHandler(message, prompt);

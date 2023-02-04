@@ -1,12 +1,22 @@
 import Prefix from "../models/prefix.model";
-import { prefixes, removablePrefixes } from "../configs/constants.config";
+import {imagePrefixes, prefixes, removablePrefixes} from "../configs/constants.config";
 
 export const getPrefix = (message: string): Prefix => {
-  const containsPrefix = prefixes.some((prefix) => message.startsWith(prefix));
+  const containsGPTPrefix = prefixes.some((prefix) => message.startsWith(prefix));
+  const containsImgPrefix = imagePrefixes.some((prefix) => message.startsWith(prefix));
 
-  if (!containsPrefix) return { isPrefix: false, message, prefix: "" };
+  if (!containsGPTPrefix && !containsImgPrefix) return { isPrefix: false, message, prefix: "" };
 
-  const prefix = prefixes.find((prefix) => message.includes(prefix));
+  let prefix, isGPT, isImg;
+  if(containsGPTPrefix){
+    prefix = prefixes.find((prefix) => message.startsWith(prefix));
+    isGPT = true;
+    isImg = false;
+  }else {
+    prefix = imagePrefixes.find((prefix) => message.startsWith(prefix));
+    isGPT = false;
+    isImg = true;
+  }
 
   const isRemovable = removablePrefixes.includes(prefix);
 
@@ -14,5 +24,5 @@ export const getPrefix = (message: string): Prefix => {
     ? message.replace(prefix, "").trim()
     : message;
 
-  return { isPrefix: true, message: messageWithoutPrefix, prefix };
+  return { isPrefix: true, message: messageWithoutPrefix, prefix, isGPT, isImg };
 };

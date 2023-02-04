@@ -23,7 +23,7 @@ const start = async () => {
     client.on("message", async (message: any) => {
       if (message.body.length == 0) return;
       if (message.from == "status@broadcast") return;
-      await handleMessage(message, message.body);
+      await handleMessage(client, message, message.body);
     });
 
     client.on('change_state', (newState) => {
