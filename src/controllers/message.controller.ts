@@ -14,6 +14,8 @@ import Prefix from "../models/prefix.model";
 import {getAuthorId, getAuthorName, getSenderId, isGroupChat} from "../utils/message.util"
 import {NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
 import {craiyon} from "../configs/cClient.config";
+import {openai} from "../configs/oClient.config";
+
 
 export const handler = async (client: Client, message: Message, p: any) => {
   try {
@@ -37,10 +39,17 @@ export const handler = async (client: Client, message: Message, p: any) => {
     if(prefix.isImg) {
       Logger.info("Generating images.")
       await message.reply("Patience is a virtue. It may take upto 30 seconds...");
-      const result = await craiyon.generate({
+      // const result = await craiyon.generate({
+      //   prompt: prompt,
+      // });
+      const response = await openai.createImage({
         prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        response_format: "b64_json"
       });
-      const media = await new MessageMedia("image/jpg", result.images[0].asBase64())
+      const decodedImg = response.data.data[0].b64_json;
+      const media = await new MessageMedia("image/jpg", decodedImg)
       await message.reply(media);
       return;
     }
