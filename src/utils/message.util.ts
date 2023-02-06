@@ -2,10 +2,6 @@ import {Message} from "whatsapp-web.js";
 import Prefix from "../models/prefix.model";
 import {imagePrefixes, removablePrefixes} from "../configs/constants.config";
 
-// export const isGroupChat = (msg: Message) => {
-//     return !!msg.author;
-// }
-
 export const getAuthorId = async (msg: Message) => {
     const isGroupChat = (await msg.getChat()).isGroup;
     return isGroupChat ? msg.author : msg.from;
@@ -15,9 +11,10 @@ export const getSenderId = (msg: Message) => {
     return msg.from;
 }
 
-export const getAuthorName = (msg: Message) => {
+export const getAuthorName = async (msg: Message) => {
+    const isGroupChat = (await msg.getChat()).isGroup;
     // @ts-ignore
-    return isGroupChat(msg) ? msg.rawData.notifyName : null;
+    return isGroupChat ? msg.rawData.notifyName : null;
 }
 
 export const isMentionsMe = async (msg: Message): Promise<boolean> => {
