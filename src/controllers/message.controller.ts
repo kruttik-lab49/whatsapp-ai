@@ -9,9 +9,15 @@ import DataModel from "../models/data.model";
 import {Client, Message, MessageMedia} from "whatsapp-web.js";
 import { personalMessageHandler } from "src/services/message.service";
 import Logger from "../utils/logger.util";
-import { getPrefix } from "../utils/prefix.util";
 import Prefix from "../models/prefix.model";
-import {getAuthorId, getAuthorName, getSenderId, isGroupChat} from "../utils/message.util"
+import {
+  getAuthorId,
+  getAuthorName,
+  getImgPrefix,
+  getPrompt,
+  getSenderId,
+  isMentionsMe
+} from "../utils/message.util"
 import {NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
 import {craiyon} from "../configs/cClient.config";
 import {openai} from "../configs/oClient.config";
@@ -23,21 +29,21 @@ export const handler = async (client: Client, message: Message, p: any) => {
 
     //Logger.info(JSON.stringify(message, null, 2));
 
-    const prefix: Prefix = getPrefix(message.body);
+    const prompt = await getPrompt(message);
 
-    const prompt = prefix.message;
-
-    if (!prefix.isPrefix) return;
-
-    if(isGroupChat(message)){
-      // @ts-ignore
-      Logger.info(`Received prompt from Group Chat ${getSenderId(message)} author ${getAuthorId(message)}(${getAuthorName(message)}): ${prompt}`);
+    // if(isGroupChat(message)){
+    const isGroupChat = (await message.getChat()).isGroup;
+    if(isGroupChat){
+      if (!await isMentionsMe(message)) return;
+      Logger.info(`Received prompt from Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${getAuthorName(message)}): ${prompt}`);
     }else {
       Logger.info(`Received prompt from Private Chat ${getSenderId(message)}: ${prompt}`);
     }
 
-    if(prefix.isImg) {
-      Logger.info("Generating images.")
+    const imgPrefix: Prefix = getImgPrefix(message.body);
+
+    if(imgPrefix.isPrefix) {
+      Logger.info(`Generating images using ${imgPrefix.prefix}`)
       await message.reply("Patience is a virtue. It may take upto 30 seconds...");
       // const result = await craiyon.generate({
       //   prompt: prompt,
@@ -102,12 +108,12 @@ export const handler = async (client: Client, message: Message, p: any) => {
         message_id: response.id,
         conversation_id: response.conversationId,
         sender_id: getSenderId(message),
-        author_id: getAuthorId(message),
+        author_id: await getAuthorId(message),
         author_name: getAuthorName(message),
         last_response: response.text,
         last_message_timestamp: new Date().toISOString(),
         parent_message_id: response.parentMessageId,
-        is_group_chat: String(isGroupChat(message))
+        is_group_chat: String(isGroupChat)
       };
       await saveConversation(conversation);
     } else {
@@ -124,8 +130,8 @@ export const handler = async (client: Client, message: Message, p: any) => {
       );
     }
 
-    if(isGroupChat(message)){
-      Logger.info(`Answer to Group Chat ${getSenderId(message)} author ${getAuthorId(message)}(${getAuthorName(message)}): ${response.text}`);
+    if(isGroupChat){
+      Logger.info(`Answer to Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${getAuthorName(message)}): ${response.text}`);
     }else {
       Logger.info(`Answer to Private Chat ${getSenderId(message)}: ${response.text}`);
     }
