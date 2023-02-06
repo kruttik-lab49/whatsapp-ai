@@ -18,7 +18,7 @@ import {
   getSenderId,
   isMentionsMe
 } from "../utils/message.util"
-import {NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
+import {GPT_IMG_PROMPT, GPT_NSFW_PROMPT, NOTHING_TO_RESET_REPLY, RESET_REPLY} from "../configs/constants.config";
 import {craiyon} from "../configs/cClient.config";
 import {openai} from "../configs/oClient.config";
 
@@ -35,7 +35,7 @@ export const handler = async (client: Client, message: Message, p: any) => {
     const isGroupChat = (await message.getChat()).isGroup;
     if(isGroupChat){
       if (!await isMentionsMe(message)) return;
-      Logger.info(`Received prompt from Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${getAuthorName(message)}): ${prompt}`);
+      Logger.info(`Received prompt from Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${await getAuthorName(message)}): ${prompt}`);
     }else {
       Logger.info(`Received prompt from Private Chat ${getSenderId(message)}: ${prompt}`);
     }
@@ -44,12 +44,16 @@ export const handler = async (client: Client, message: Message, p: any) => {
 
     if(imgPrefix.isPrefix) {
       Logger.info(`Generating images using ${imgPrefix.prefix}`)
-      await message.reply("Patience is a virtue. It may take upto 30 seconds...");
+      await message.reply("Patience is a virtue. It may take upto 10 seconds...");
+      const imgPrompt = GPT_IMG_PROMPT(prompt)
+      let res = await api.sendMessage(imgPrompt);
+
       // const result = await craiyon.generate({
       //   prompt: prompt,
       // });
+      Logger.info(`Using image prompt from chatgpt: ${res.text}`);
       const response = await openai.createImage({
-        prompt: prompt,
+        prompt: res.text,
         n: 1,
         size: "1024x1024",
         response_format: "b64_json"
@@ -93,18 +97,24 @@ export const handler = async (client: Client, message: Message, p: any) => {
 
     let response: any;
 
+    let gptPrompt = prompt;
+    if(prompt.toLowerCase() == 'nsfw') {
+      Logger.info("Setting NSFW mode...");
+      gptPrompt = GPT_NSFW_PROMPT;
+    }
+
     if (hasPreviousConversation || chatOptions) {
-      response = await api.sendMessage(prompt, chatOptions);
+      response = await api.sendMessage(gptPrompt, chatOptions);
     }
 
     if (!hasPreviousConversation || !chatOptions) {
-      response = await api.sendMessage(prompt);
+      response = await api.sendMessage(gptPrompt);
     }
 
     if (!hasPreviousConversation) {
       // Save the conversation
       const conversation: DataModel = {
-        last_message: prompt,
+        last_message: gptPrompt,
         message_id: response.id,
         conversation_id: response.conversationId,
         sender_id: getSenderId(message),
@@ -122,7 +132,7 @@ export const handler = async (client: Client, message: Message, p: any) => {
         getSenderId(message),
         getAuthorId(message),
         getAuthorName(message),
-        prompt,
+        gptPrompt,
         response.text,
         new Date().toISOString(),
         response.id,
@@ -131,7 +141,7 @@ export const handler = async (client: Client, message: Message, p: any) => {
     }
 
     if(isGroupChat){
-      Logger.info(`Answer to Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${getAuthorName(message)}): ${response.text}`);
+      Logger.info(`Answer to Group Chat ${getSenderId(message)} author ${await getAuthorId(message)}(${await getAuthorName(message)}): ${response.text}`);
     }else {
       Logger.info(`Answer to Private Chat ${getSenderId(message)}: ${response.text}`);
     }
